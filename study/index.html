@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>text</title>
+    <script src="../Cesium.js"></script>
+    <link rel="stylesheet" href="../Widgets/widgets.css">
+</head>
+<div id="cesiumContainer" style="width: 100%;"></div>
+<script>
+    let viewer = new Cesium.Viewer('cesiumContainer', {
+        animation: false, //是否显示动画控件
+        baseLayerPicker: false, //是否显示图层选择控件
+        geocoder: true, //是否显示地名查找控件
+        timeline: false, //是否显示时间线控件
+        sceneModePicker: true, //是否显示投影方式控件
+        navigationHelpButton: false, //是否显示帮助信息控件
+        infoBox: true //是否显示点击要素之后显示的信息
+    })
+    var layer = new Cesium.WebMapTileServiceImageryProvider({
+        url: "http://t0.tianditu.gov.cn/img_w/wmts?tk=ffd0e61d238085c62d54bf80db7b8a72",
+        layer: "img",
+        style: "default",
+        tileMatrixSetID: "w",
+        format: "tiles",
+        maximumLevel: 18
+    });
+    viewer.imageryLayers.addImageryProvider(layer);
+    var layer1 = new Cesium.WebMapTileServiceImageryProvider({
+        url: "http://t0.tianditu.gov.cn/cia_w/wmts?tk=ffd0e61d238085c62d54bf80db7b8a72",
+        layer: "cia",
+        style: "default",
+        tileMatrixSetID: "w",
+        format: "tiles",
+        maximumLevel: 18
+    });
+    viewer.imageryLayers.addImageryProvider(layer1);
+    let terrainProvider = new Cesium.CesiumTerrainProvider({
+        url: 'http://localhost:3000/data'
+    })
+    viewer.terrainProvider = terrainProvider;
+    viewer.camera.setView({
+        destination: {
+            x: -2477259.981533088,
+            y: 5226050.867670714,
+            z: 2682600.9236975787
+        },
+        orientation: {
+            heading: 3.9840385584411706,
+            pitch: -0.41045660141081575,
+            roll: 6.281095613911869
+        }
+    });
+    console.log(viewer.camera)
+</script>
+
+<body>
+
+</body>
+
+</html>
