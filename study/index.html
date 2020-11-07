@@ -8,16 +8,20 @@
     <script src="../Cesium.js"></script>
     <link rel="stylesheet" href="../Widgets/widgets.css">
 </head>
-<div id="cesiumContainer" style="width: 100%;"></div>
+<body>
+    <div id="cesiumContainer" style="width: 100%;"></div>
 <script>
-    let viewer = new Cesium.Viewer('cesiumContainer', {
+    var viewer = new Cesium.Viewer('cesiumContainer', {
         animation: false, //是否显示动画控件
         baseLayerPicker: false, //是否显示图层选择控件
         geocoder: true, //是否显示地名查找控件
         timeline: false, //是否显示时间线控件
         sceneModePicker: true, //是否显示投影方式控件
         navigationHelpButton: false, //是否显示帮助信息控件
-        infoBox: true //是否显示点击要素之后显示的信息
+        infoBox: true, //是否显示点击要素之后显示的信息
+        homeButton:false,
+        sceneModePicker :false,
+
     })
     var layer = new Cesium.WebMapTileServiceImageryProvider({
         url: "http://t0.tianditu.gov.cn/img_w/wmts?tk=ffd0e61d238085c62d54bf80db7b8a72",
@@ -42,21 +46,35 @@
     })
     viewer.terrainProvider = terrainProvider;
     viewer.camera.setView({
-        destination: {
-            x: -2477259.981533088,
-            y: 5226050.867670714,
-            z: 2682600.9236975787
-        },
-        orientation: {
-            heading: 3.9840385584411706,
-            pitch: -0.41045660141081575,
-            roll: 6.281095613911869
-        }
+        destination: Cesium.Cartesian3.fromDegrees(115.29294,25.000472,1000)
+        
     });
-    console.log(viewer.camera)
+   
+    // function drawWater(targetHeight=3, adapCoordi=[109.2039, 35.6042, 0, 109.2774 ,35.6025, 0,109.2766,35.5738, 0],waterHeight=0) {  
+         
+    //             var entities = viewer.entities;
+    //            let text = Cesium.Cartesian3.fromDegreesArrayHeights(adapCoordi);
+    //            console.log(text);
+    //             //方式1
+    //             let entity = entities.add({
+    //                 polygon : {
+    //                     hierarchy : new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArrayHeights([115.302821,25.012588,115.327183,24.998474,115.29294,25.000472])),
+    //                     perPositionHeight: true,
+    //                     extrudedHeight:
+    //                     new Cesium.CallbackProperty(function () {  //此处用属性回调函数，直接设置extrudedHeight会导致闪烁。
+    //                         waterHeight+=1;
+    //                      if(waterHeight>targetHeight){
+    //                          waterHeight=targetHeight;//给个最大值
+    //                      }
+    //                      return waterHeight
+    //                          },false),
+    //                     material : new Cesium.Color.fromBytes(0,191,255,100),
+    //                 }
+    //             });
+            
+    //         }
+    //         drawWater();
 </script>
-
-<body>
 
 </body>
 

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>text</title>
+    <script src="../Cesium.js"></script>
+    <link rel="stylesheet" href="../Widgets/widgets.css">
+</head>
+<body>
+    <div id="cesiumContainer" style="width: 100%;"></div>
+<script>
+    var viewer = new Cesium.Viewer('cesiumContainer', {
+        animation: false, //是否显示动画控件
+        baseLayerPicker: false, //是否显示图层选择控件
+        geocoder: true, //是否显示地名查找控件
+        timeline: false, //是否显示时间线控件
+        sceneModePicker: true, //是否显示投影方式控件
+        navigationHelpButton: false, //是否显示帮助信息控件
+        infoBox: true, //是否显示点击要素之后显示的信息
+        homeButton:false,
+        sceneModePicker :false,
+
+    })
+    var layer = new Cesium.WebMapTileServiceImageryProvider({
+        url: "http://t0.tianditu.gov.cn/img_w/wmts?tk=ffd0e61d238085c62d54bf80db7b8a72",
+        layer: "img",
+        style: "default",
+        tileMatrixSetID: "w",
+        format: "tiles",
+        maximumLevel: 18
+    });
+    viewer.imageryLayers.addImageryProvider(layer);
+    var layer1 = new Cesium.WebMapTileServiceImageryProvider({
+        url: "http://t0.tianditu.gov.cn/cia_w/wmts?tk=ffd0e61d238085c62d54bf80db7b8a72",
+        layer: "cia",
+        style: "default",
+        tileMatrixSetID: "w",
+        format: "tiles",
+        maximumLevel: 18
+    });
+    viewer.imageryLayers.addImageryProvider(layer1);
+    let terrainProvider = new Cesium.CesiumTerrainProvider({
+        url: 'http://localhost:3000/data'
+    })
+    viewer.terrainProvider = terrainProvider;
+    viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(115.29294,25.000472,1000)
+        
+    });
+    //绘制贴地图
+    var entityPolygon = null;
+    var points = null;
+    var drawingMode = 'polygon';
+    var activeShapePoints = [];
+    var activeShape;
+    var floatingPoint;
+    //取消左键双击事件
+    //cesiumWidget cesium外部场景小组件
+    //screemSpaceEventHandler 获取屏幕空间处理事件程序
+    // removeInputAction 删除要在输入事件上执行的功能
+    viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+    //淹没分析
+    function createPoint(worldPosition) {
+        console.log('点我了');
+        //将实体添加到实体集合中
+        var point = viewer.entities.add({
+            //获取或设置位置
+            position:worldPosition,
+            //获取或设置点图形
+            point:{
+                pixelSize:10,//获取或设置数字属性，以像素为大小
+                color:Cesium.Color.YELLOW, //获取或设置颜色
+                //获取或设置相对于地形的高度，CLAMP_TOGROUND表示固定在地形上
+                heightReference:Cesium.HeightReference.CLAMP_TO_GROUND 
+            }
+        }),
+        points = point;
+        console.log('是不是这里有问题')
+        return point;
+
+    }
+    function drawShape(positionData) {
+       // console.log(positionData);
+        var shape;
+        console.log('画地形');
+        if(drawingMode === "line"){
+            shape = viewer.entities.add({
+                //定义折线  
+                polyline:{
+                    positions:positionData,
+                    clampToGround:true,
+                    //折线遵循的类型
+                    arcType:Cesium.ArcType.RHUMB,
+                    material:Cesium.Color.GREEN,
+                    width:5
+
+                }
+            })
+        }
+        else if (drawingMode === 'polygon'){
+            console.log('画的我')
+            shape = viewer.entities.add({
+                polygon:{
+                    //定义多边形层次结构
+                    hierarchy:positionData,
+                    //指定多边形填充材料
+                    material:new Cesium.ColorMaterialProperty(Cesium.Color.LIGHTSKYBLUE.withAlpha(0.7))
+                }
+            })
+        }
+        else if (drawingMode === 'point'){
+            shape = viewer.entities.add({
+                position:worldPosition,
+                point:{
+                    pixelSize:10,
+                    color:Cesium.Color.YELLOW,
+                    heightReference:Cesium.heightReference.CLAMP_TO_GROUND
+                }
+            })
+        }
+        console.log('shape',shape);
+        return shape;
+
+    }
+    //处理用户输入事件
+    var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    handler.setInputAction(function(event){
+        //检查给定的场景是否支持固定在地形或3D瓷砖上的折线。如果不支持此功能，则具有PolylineGraphics的实体将使用位于提供的高度并使用`arcType`参数而不是固定在地面上。
+        if(!Cesium.Entity.supportsPolylinesOnTerrain(viewer.scene)){
+            console.log('啥也不是');
+            return;
+        }
+        //返回从深度缓冲区和窗口位置重构的笛卡尔位置。 
+        var earthPosition = viewer.scene.pickPosition(event.position);
+        console.log(earthPosition);
+        //如果定义了对象，则返回true，否则返回false。 
+        if(Cesium.defined(earthPosition)){
+            if(activeShapePoints.length === 0){
+                
+                floatingPoint = createPoint(earthPosition);
+                
+               // console.log('到这了');
+                activeShapePoints.push(earthPosition);
+                //一个 Property ，其值由回调函数延迟计算。 每次回调函数返回相同值时，为 true ，如果值将更改，则为 false 。
+                var dynamicPositions = new Cesium.CallbackProperty(function(){
+                   // console.log('也到这了')
+                    return activeShapePoints;
+                },false);
+                console.log(activeShapePoints);
+                console.log(dynamicPositions);
+                activeShape = drawShape(activeShapePoints);
+            }
+            activeShapePoints.push(earthPosition);
+            createPoint(earthPosition);
+        }
+    },
+        Cesium.ScreenSpaceEventType.LEFT_CLICK
+    );
+    function terminateShage(){
+        activeShapePoints.pop();
+        entityPolygon = drawShape(activeShapePoints);
+        if(entityPolygon.polygon!=null) {
+            thisWidget.drawOk(entityPolygon);
+        }
+        viewer.entities.remove(floatingPoint);
+        viewer.entities.remove(activeShape);
+        entityPolygon = null;
+        floatingPoint = undefined;
+        activeShape = undefined;
+        activeShapePoints = [];
+    }
+    handler.setInputAction(function(event){
+        terminateShage();
+
+    },Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+    // function drawWater(targetHeight=3, adapCoordi=[109.2039, 35.6042, 0, 109.2774 ,35.6025, 0,109.2766,35.5738, 0],waterHeight=0) {  
+         
+    //             var entities = viewer.entities;
+    //            let text = Cesium.Cartesian3.fromDegreesArrayHeights(adapCoordi);
+    //            console.log(text);
+    //             //方式1
+    //             let entity = entities.add({
+    //                 polygon : {
+    //                     hierarchy : new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArrayHeights([115.302821,25.012588,115.327183,24.998474,115.29294,25.000472])),
+    //                     perPositionHeight: true,
+    //                     extrudedHeight:
+    //                     new Cesium.CallbackProperty(function () {  //此处用属性回调函数，直接设置extrudedHeight会导致闪烁。
+    //                         waterHeight+=1;
+    //                      if(waterHeight>targetHeight){
+    //                          waterHeight=targetHeight;//给个最大值
+    //                      }
+    //                      return waterHeight
+    //                          },false),
+    //                     material : new Cesium.Color.fromBytes(0,191,255,100),
+    //                 }
+    //             });
+            
+    //         }
+    //         drawWater();
+</script>
+
+</body>
+
+</html>
