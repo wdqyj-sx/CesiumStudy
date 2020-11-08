@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>text</title>
+    <script src="../Cesium.js"></script>
+    <link rel="stylesheet" href="../Widgets/widgets.css">
+</head>
+
+<body>
+    <div id="cesiumContainer" style="width: 100%;"></div>
+    <script>
+        Cesium.Ion.defaultAccessToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkZjg5NmQzMi1lN2M3LTQxZTktOTAyYS01MDFkM2RjYTgyOGMiLCJpZCI6MzQ2NjgsImlhdCI6MTYwMDY4Mzg0OX0.vv0m2W-E8Vmi3VleFtwfTRBYdSoNdBCS-COnZVgN3Zc';
+        var viewer = new Cesium.Viewer('cesiumContainer', {
+            animation: false, //是否显示动画控件
+            baseLayerPicker: false, //是否显示图层选择控件
+            geocoder: true, //是否显示地名查找控件
+            timeline: false, //是否显示时间线控件
+            sceneModePicker: true, //是否显示投影方式控件
+            navigationHelpButton: false, //是否显示帮助信息控件
+            infoBox: true, //是否显示点击要素之后显示的信息
+            homeButton: false,
+            sceneModePicker: false,
+
+        })
+        var layer = new Cesium.WebMapTileServiceImageryProvider({
+            url: "http://t0.tianditu.gov.cn/img_w/wmts?tk=ffd0e61d238085c62d54bf80db7b8a72",
+            layer: "img",
+            style: "default",
+            tileMatrixSetID: "w",
+            format: "tiles",
+            maximumLevel: 18
+        });
+        viewer.imageryLayers.addImageryProvider(layer);
+        var layer1 = new Cesium.WebMapTileServiceImageryProvider({
+            url: "http://t0.tianditu.gov.cn/cia_w/wmts?tk=ffd0e61d238085c62d54bf80db7b8a72",
+            layer: "cia",
+            style: "default",
+            tileMatrixSetID: "w",
+            format: "tiles",
+            maximumLevel: 18
+        });
+        viewer.imageryLayers.addImageryProvider(layer1);
+        let terrainProvider = new Cesium.CesiumTerrainProvider({
+            url: 'http://localhost:3000/data'
+        })
+        viewer.terrainProvider = terrainProvider;
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(115.29294, 25.000472, 1000)
+
+        });
+        //绘制贴地图
+        var entityPolygon = null;
+        var points = null;
+        var drawingMode = 'polygon';
+        var activeShapePoints = [];
+        var activeShape;
+        var floatingPoint;
+        //取消左键双击事件
+        //cesiumWidget cesium外部场景小组件
+        //screemSpaceEventHandler 获取屏幕空间处理事件程序
+        // removeInputAction 删除要在输入事件上执行的功能
+        viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+        //淹没分析
+        function createPoint(worldPosition) {
+            //console.log('点我了');
+            //将实体添加到实体集合中
+            var point = viewer.entities.add({
+                    //获取或设置位置
+                    position: worldPosition,
+                    //获取或设置点图形
+                    point: {
+                        pixelSize: 10, //获取或设置数字属性，以像素为大小
+                        color: Cesium.Color.YELLOW, //获取或设置颜色
+                        //获取或设置相对于地形的高度，CLAMP_TOGROUND表示固定在地形上
+                        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+                    }
+                }),
+                points = point;
+           // console.log('是不是这里有问题')
+            return point;
+
+        }
+
+        function drawShape(positionData) {
+            // console.log(positionData);
+            var shape;
+           // console.log('画地形');
+            if (drawingMode === "line") {
+                shape = viewer.entities.add({
+                    //定义折线  
+                    polyline: {
+                        positions: positionData,
+                        clampToGround: true,
+                        //折线遵循的类型
+                        arcType: Cesium.ArcType.RHUMB,
+                        material: Cesium.Color.GREEN,
+                        width: 5
+
+                    }
+                })
+            } else if (drawingMode === 'polygon') {
+               
+                shape = viewer.entities.add({
+                    polygon: {
+                        //定义多边形层次结构
+                        hierarchy: positionData,
+                        //指定多边形填充材料
+                        material: new Cesium.ColorMaterialProperty(Cesium.Color.LIGHTSKYBLUE.withAlpha(0.7))
+                    }
+                })
+            } else if (drawingMode === 'point') {
+                shape = viewer.entities.add({
+                    position: worldPosition,
+                    point: {
+                        pixelSize: 10,
+                        color: Cesium.Color.YELLOW,
+                        heightReference: Cesium.heightReference.CLAMP_TO_GROUND
+                    }
+                })
+            }
+            console.log('shape', shape);
+            return shape;
+
+        }
+        //处理用户输入事件
+        viewer.scene.globe.depthTestAgainstTerrain = true;
+        var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        handler.setInputAction(function (event) {
+                //检查给定的场景是否支持固定在地形或3D瓷砖上的折线。如果不支持此功能，则具有PolylineGraphics的实体将使用位于提供的高度并使用`arcType`参数而不是固定在地面上。
+                if (!Cesium.Entity.supportsPolylinesOnTerrain(viewer.scene)) {
+                    console.log('啥也不是');
+                    return;
+                }
+                //返回从深度缓冲区和窗口位置重构的笛卡尔位置。 
+                var earthPosition = viewer.scene.pickPosition(event.position);
+                console.log(earthPosition);
+                floatingPoint = createPoint(earthPosition);
+
+                activeShapePoints.push(earthPosition);
+
+            },
+            Cesium.ScreenSpaceEventType.LEFT_CLICK
+        );
+        handler.setInputAction(function (event) {
+            console.log(activeShapePoints);
+            activeShape = drawShape(activeShapePoints);
+        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+        handler.setInputAction(function (event) {
+            viewer.entities.removeAll();
+            var greenCylinder = viewer.entities.add({
+            name: 'Green cylinder with black outline',
+            position: Cesium.Cartesian3.fromDegrees(-100.0, 40.0, 200000.0),
+            cylinder: {
+                length: 400000.0,
+                topRadius: 200000.0,
+                bottomRadius: 200000.0,
+                material: Cesium.Color.GREEN.withAlpha(0.5),
+                outline: true,
+                outlineColor: Cesium.Color.DARK_GREEN
+            },
+            show:false
+        });
+            shape = viewer.entities.add({
+                polygon:{
+                    //定义多边形层次结构
+                    hierarchy:activeShapePoints,
+                    //指定多边形填充材料
+                    material:new Cesium.ColorMaterialProperty(Cesium.Color.LIGHTSKYBLUE.withAlpha(0.7))
+                }
+            })
+            if (shape.polygon != null) {
+
+                thisWidget.drawOk(shape);
+            }
+            //thisWidget.drawOk(activeShapePoints);
+          
+
+            floatingPoint = undefined;
+            activeShape = undefined;
+            activeShapePoints = [];
+            int = self.setInterval(flood, 500);  
+        }, Cesium.ScreenSpaceEventType.MIDDLE_CLICK);
+        //淹没分析核心代码
+        var thisWidget = {
+            entity: null,
+            drawOk: function (e) {
+                console.log(e)
+                this.entity = e;
+                e.polygon.hierarchy.getValue().positions;
+                var t = this.computePolygonHeightRange(e.polygon.hierarchy.getValue().positions);
+                currentHeight = t.minHeight, maxValue = t.maxHeight;
+                console.log(currentHeight,maxValue);
+            },
+            computePolygonHeightRange: function (e) {
+                var t = []
+                for (var i = 0; i < e.length; i++) 
+                    t.push(e[i].clone());
+                    console.log(e.length)
+                console.log(t);
+                var a, n, r, o, s, u, l, h = 0,
+                    g = 9999,
+                    c = Math.PI / Math.pow(2, 11) / 64,
+                    m = new Cesium.PolygonGeometry.fromPositions({
+                        positions: t,
+                        vertexFormat: Cesium.PerInstanceColorAppearance.FLAT_VERTEX_FORMAT,
+                        granularity: c
+                    }),
+
+                    d = new Cesium.PolygonGeometry.createGeometry(m);
+                    console.log(d)
+                for (i = 0; i < d.indices.length; i += 3) 
+                    a = d.indices[i],
+                    n = d.indices[i + 1],
+                    r = d.indices[i + 2],
+                    l = new Cesium.Cartesian3(d.attributes.position.values[3 * a], d.attributes.position.values[
+                        3 * a + 1], d.attributes.position.values[3 * a + 2]),
+                    (o = viewer.scene.globe.getHeight(Cesium.Cartographic.fromCartesian(l))) < g && (g = o),
+                    h < o && (h = o),
+                    l = new Cesium.Cartesian3(d.attributes.position.values[3 * n], d.attributes.position.values[
+                        3 * n + 1], d.attributes.position.values[3 * n + 2]),
+                    (s = viewer.scene.globe.getHeight(Cesium.Cartographic.fromCartesian(l))) < g && (g = s),
+                    h < s && (h = s),
+                    l = new Cesium.Cartesian3(d.attributes.position.values[3 * r], d.attributes.position.values[
+                        3 * r + 1], d.attributes.position.values[3 * r + 2]),
+                    (u = viewer.scene.globe.getHeight(Cesium.Cartographic.fromCartesian(l))) < g && (g = u),
+                    h < u && (h = u);
+                return {
+                    maxHeight: h,
+                    minHeight: g
+                }
+            },
+            startFx: function (e) {
+                viewer.scene.globe.depthTestAgainstTerrain = !0;
+                var t = this;
+                this.extrudedHeight = e,
+                    this.entity.polygon.extrudedHeight = new Cesium.CallbackProperty(function (e) {
+                        return t.extrudedHeight
+                    }, false);
+
+                for (var i = this.entity.polygon.hierarchy.getValue(), a = [], n = 0; n < i.length; n++) {
+                    var r = Cesium.Ellipsoid.WGS84.cartesianToCartographic(i[n]),
+                        o = {
+                            lon: Cesium.Math.toDegrees(r.longitude),
+                            lat: Cesium.Math.toDegrees(r.latitude),
+                            hgt: e
+                        },
+                        s = [o.lon, o.lat, o.hgt];
+                    a = a.concat(s)
+                }
+                return i = Cesium.Cartesian3.fromDegreesArrayHeights(a),
+                    this.entity.polygon.hierarchy = new Cesium.CallbackProperty(function (e) {
+                        return i;
+                    }, false),
+                    !0
+            },
+            clear: function () {
+                viewer.scene.globe.depthTestAgainstTerrain = !1,
+                    this.entity = null
+            },
+            updateHeight: function (e) {
+                this.entity.polygon.extrudedHeight = e
+            }
+        }
+
+        function stopFX() {
+            self.clearInterval(int);
+            
+        }
+        window.flood = function () {
+            console.log('哈哈')
+            currentHeight > maxValue ? stopFX() : (thisWidget.updateHeight(currentHeight), currentHeight += 1);
+        };
+    </script>
+
+</body>
+
+</html>

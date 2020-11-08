@@ -11,6 +11,7 @@
 <body>
     <div id="cesiumContainer" style="width: 100%;"></div>
 <script>
+     Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkZjg5NmQzMi1lN2M3LTQxZTktOTAyYS01MDFkM2RjYTgyOGMiLCJpZCI6MzQ2NjgsImlhdCI6MTYwMDY4Mzg0OX0.vv0m2W-E8Vmi3VleFtwfTRBYdSoNdBCS-COnZVgN3Zc';
     var viewer = new Cesium.Viewer('cesiumContainer', {
         animation: false, //是否显示动画控件
         baseLayerPicker: false, //是否显示图层选择控件
@@ -139,25 +140,7 @@
          floatingPoint =  createPoint(earthPosition);
         
         activeShapePoints.push(earthPosition);
-        //如果定义了对象，则返回true，否则返回false。 
-        // if(Cesium.defined(earthPosition)){
-        //     if(activeShapePoints.length === 0){
-                
-        //         floatingPoint = createPoint(earthPosition);
-                
-        //         console.log('到这了');
-        //         activeShapePoints.push(earthPosition);
-        //         //一个 Property ，其值由回调函数延迟计算。 每次回调函数返回相同值时，为 true ，如果值将更改，则为 false 。
-        //         var dynamicPositions = new Cesium.CallbackProperty(function(){
-        //             console.log('也到这了')
-        //             return activeShapePoints;
-        //         },false);
-        //         console.log(dynamicPositions);
-        //         activeShape = drawShape(dynamicPositions);
-        //     }
-        //     activeShapePoints.push(earthPosition);
-        //     createPoint(earthPosition);
-        // }
+        
     },
         Cesium.ScreenSpaceEventType.LEFT_CLICK
     );
@@ -172,47 +155,7 @@
         activeShape = undefined;
         activeShapePoints = [];
     },Cesium.ScreenSpaceEventType.MIDDLE_CLICK);
-    // function terminateShage(){
-    //     activeShapePoints.pop();
-    //     entityPolygon = drawShape(activeShapePoints);
-    //     if(entityPolygon.polygon!=null) {
-    //         thisWidget.drawOk(entityPolygon);
-    //     }
-    //     viewer.entities.remove(floatingPoint);
-    //     viewer.entities.remove(activeShape);
-    //     entityPolygon = null;
-    //     floatingPoint = undefined;
-    //     activeShape = undefined;
-    //     activeShapePoints = [];
-    // }
-    // handler.setInputAction(function(event){
-    //     terminateShage();
-
-    // },Cesium.ScreenSpaceEventType.RIGHT_CLICK);
-    // function drawWater(targetHeight=3, adapCoordi=[109.2039, 35.6042, 0, 109.2774 ,35.6025, 0,109.2766,35.5738, 0],waterHeight=0) {  
-         
-    //             var entities = viewer.entities;
-    //            let text = Cesium.Cartesian3.fromDegreesArrayHeights(adapCoordi);
-    //            console.log(text);
-    //             //方式1
-    //             let entity = entities.add({
-    //                 polygon : {
-    //                     hierarchy : new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArrayHeights([115.302821,25.012588,115.327183,24.998474,115.29294,25.000472])),
-    //                     perPositionHeight: true,
-    //                     extrudedHeight:
-    //                     new Cesium.CallbackProperty(function () {  //此处用属性回调函数，直接设置extrudedHeight会导致闪烁。
-    //                         waterHeight+=1;
-    //                      if(waterHeight>targetHeight){
-    //                          waterHeight=targetHeight;//给个最大值
-    //                      }
-    //                      return waterHeight
-    //                          },false),
-    //                     material : new Cesium.Color.fromBytes(0,191,255,100),
-    //                 }
-    //             });
-            
-    //         }
-    //         drawWater();
+    
 </script>
 
 </body>
